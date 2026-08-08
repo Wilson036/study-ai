@@ -1,0 +1,24 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>拾光單元測試</title><style>body{font:15px system-ui;margin:30px;max-width:900px}li{padding:5px}.ok{color:#17623e}.bad{color:#a22}iframe{display:none}</style></head><body><h1>拾光單元測試</h1><p id="summary">載入中…</p><ol id="results"></ol><iframe id="app" src="../src/index.html"></iframe><script>
+const results=[];function test(name,fn){try{fn();results.push([true,name])}catch(e){results.push([false,`${name}：${e.message}`])}}function eq(a,b){if(JSON.stringify(a)!==JSON.stringify(b))throw Error(`${JSON.stringify(a)} ≠ ${JSON.stringify(b)}`)}function permutations(a){if(a.length<2)return[a];return a.flatMap((x,i)=>permutations(a.slice(0,i).concat(a.slice(i+1))).map(rest=>[x,...rest]))}
+document.querySelector("#app").onload=()=>{const C=document.querySelector("#app").contentWindow.StudyCore;
+test("最差優先：clean + wrong = wrong",()=>eq(C.dayOutcome([{outcome:"clean"},{outcome:"wrong"}]),"wrong"));
+test("交換律",()=>{for(const a of ["clean","near","wrong"])for(const b of ["clean","near","wrong"])eq(C.dayOutcome([{outcome:a},{outcome:b}]),C.dayOutcome([{outcome:b},{outcome:a}]))});
+test("結合律",()=>{for(const a of ["clean","near","wrong"])for(const b of ["clean","near","wrong"])for(const c of ["clean","near","wrong"]){const left=C.dayOutcome([{outcome:C.dayOutcome([{outcome:a},{outcome:b}])},{outcome:c}]),right=C.dayOutcome([{outcome:a},{outcome:C.dayOutcome([{outcome:b},{outcome:c}])}]);eq(left,right)}});
+test("冪等律",()=>{for(const a of ["clean","near","wrong"])eq(C.dayOutcome([{outcome:a},{outcome:a}]),a)});
+const events=[{item_id:"q",study_day:"2026-01-01",outcome:"clean"},{item_id:"q",study_day:"2026-01-01",outcome:"wrong"},{item_id:"q",study_day:"2026-01-02",outcome:"clean"},{item_id:"q",study_day:"2026-01-03",outcome:"near"},{item_id:"q",study_day:"2026-01-04",outcome:"clean"}];
+test("所有排列都得到完整相同狀態",()=>{const expected=C.deriveItem(events);for(const p of permutations(events))eq(C.deriveItem(p),expected)});
+test("重複 clean 不連升兩級",()=>eq(C.deriveItem([{study_day:"2026-01-01",outcome:"clean"},{study_day:"2026-01-01",outcome:"clean"}]).level,1));
+test("錯題需兩個不同日 clean 畢業",()=>{const one=C.deriveItem([{study_day:"2026-01-01",outcome:"wrong"},{study_day:"2026-01-02",outcome:"clean"}]),two=C.deriveItem([{study_day:"2026-01-01",outcome:"wrong"},{study_day:"2026-01-02",outcome:"clean"},{study_day:"2026-01-03",outcome:"clean"}]);eq(one.inMistakes,true);eq(two.inMistakes,false)});
+test("near 不算畢業成功",()=>eq(C.deriveItem([{study_day:"2026-01-01",outcome:"wrong"},{study_day:"2026-01-02",outcome:"near"}]).successDays.length,0));
+test("晚到舊事件後熱/冷重播相同",()=>{const initial=events.slice(2),late=events[1];C.deriveItem(initial);eq(C.deriveItem([...initial,late]),C.deriveItem([late,...initial]))});
+test("正規化全半形、大小寫、標點與空白",()=>eq(C.normalizeAnswer(" ＰＣＡ， "),"pca"));
+test("拉丁字母編輯距離 1 算 near",()=>eq(C.judge("transfomer",{answer:"transformer",accept:[]}),"near"));
+test("中文錯一字不套近似",()=>eq(C.judge("特徵直分解",{answer:"特徵值分解",accept:[]}),"wrong"));
+test("曆日加減跨月",()=>eq(C.addDays("2026-01-31",1),"2026-02-01"));
+test("曆日加減跨年",()=>eq(C.addDays("2026-12-31",1),"2027-01-01"));
+test("台北 03:59 屬前一學習日",()=>eq(C.studyDay(new Date("2026-02-01T19:59:00Z"),"Asia/Taipei"),"2026-02-01"));
+test("台北 04:00 屬當日",()=>eq(C.studyDay(new Date("2026-02-01T20:00:00Z"),"Asia/Taipei"),"2026-02-02"));
+test("DST 時區日界仍為 04:00",()=>eq(C.studyDay(new Date("2026-03-08T07:30:00Z"),"America/New_York"),"2026-03-07"));
+test("Magic Link fragment 解析",()=>{const s=C.parseMagicLink("#access_token=user-jwt&refresh_token=refresh&expires_at=1900000000&type=magiclink");eq(s.access_token,"user-jwt");eq(s.refresh_token,"refresh");eq(C.parseMagicLink(""),null)});
+const failed=results.filter(x=>!x[0]);document.querySelector("#summary").textContent=`${results.length-failed.length}/${results.length} 通過`;document.querySelector("#results").innerHTML=results.map(([ok,n])=>`<li class="${ok?'ok':'bad'}">${ok?'✓':'✗'} ${n}</li>`).join("");document.title=failed.length?`FAIL ${failed.length}`:"PASS";
+};</script></body></html>

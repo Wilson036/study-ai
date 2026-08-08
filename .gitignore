@@ -1,0 +1,13 @@
+.DS_Store
+__pycache__/
+*.pyc
+
+# Private source material and generated question-bank data
+/data/
+*.pdf
+
+# Local credentials and private keys
+.env
+.env.*
+*.pem
+*.key
