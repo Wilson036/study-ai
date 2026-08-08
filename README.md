@@ -1,6 +1,6 @@
 # 拾光｜AI 應用規劃師（中級）互動記憶網頁
 
-拾光是依兩份官方學習指引建立的主動回想網站。它不是完整 Anki，也不在使用時呼叫 LLM：題庫在部署前一次生成並凍結，網站只負責出題、間隔排程、離線保存與跨裝置同步。
+拾光是依兩份官方學習指引建立的主動回想網站。它不是完整 Anki，也不在使用時呼叫 LLM：題庫在部署前一次生成並凍結，網站只負責出題、間隔排程、離線保存與跨裝置同步。整個網站使用單一預先設定的 Supabase 環境，一般使用者只需輸入 Email，不會看到 Supabase 設定欄位。
 
 ## 已實作
 
@@ -28,13 +28,13 @@ python3 tools/build.py
 python3 -m http.server 8080
 ```
 
-開啟 `http://localhost:8080/src/` 使用網站，或開啟 `http://localhost:8080/tests/unit.html` 執行瀏覽器單元測試。`dist/` 只含 app shell，不含私有題庫；部署前要把 `data/questions.json` 與 `data/manifest.json` 上傳到 Supabase Storage。
+部署者要先在 `src/config.js` 填入 Supabase Project URL 與 publishable key，再執行 `python3 tools/build.py`。開啟 `http://localhost:8080/src/` 使用網站，或開啟 `http://localhost:8080/tests/unit.html` 執行瀏覽器單元測試。`dist/` 只含 app shell 與公開連線設定，不含私有題庫；部署前要把 `data/questions.json` 與 `data/manifest.json` 上傳到 Supabase Storage。
 
 ## 資料與隱私
 
-兩份來源 PDF 只在本機被讀取，沒有移動到 `study-app/`、沒有複製到 `dist/`，也不應上傳到 Cloudflare 或 Supabase。瀏覽器中的 local profile 不是安全邊界；有本機瀏覽器存取權的人可以讀改刪該裝置的資料。伺服器端仍以 JWT、RLS 與指定 UUID 的 Storage policy 授權。
+兩份來源 PDF 只在本機被讀取，沒有移動到 `study-app/`、沒有複製到 `dist/`，也不應上傳到 Cloudflare 或 Supabase。瀏覽器中的 local profile 不是安全邊界；有本機瀏覽器存取權的人可以讀改刪該裝置的資料。使用者第一次完成 Magic Link 後會自動建立帳號；伺服器端以 JWT 與 RLS 隔離各使用者資料，私有題庫只開放給已登入帳號。
 
-請只在設定頁填 Supabase **publishable key**（舊專案的 anon key 亦可）。任何 secret 或 `service_role` key 都不得進入網頁、版本庫或截圖。
+`src/config.js` 只能放 Supabase **publishable key**（舊專案的 anon key 亦可）。這類前端 key 本來就會傳給瀏覽器，真正的資料權限仍由 Auth、RLS 與 Storage policy 控制。任何 secret 或 `service_role` key 都不得進入網頁、版本庫或截圖。
 
 ## 品質限制
 

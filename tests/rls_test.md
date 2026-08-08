@@ -8,8 +8,8 @@
 - A 查詢 B 的事件：回傳 0 列。
 - A 插入 `user_id=B`：被 RLS 拒絕。
 - A 對既有事件 update/delete：重新 select 後逐欄確認資料未變；HTTP 200 本身不算通過。
-- 未登入及非 schema 指定 UUID 下載私有 `bank/questions.json`：403。
-- 用未建立的 email 呼叫 OTP：不得建立使用者。
+- 未登入下載私有 `bank/questions.json`：403；自動註冊並登入的 A、B 帳號都能下載，但不能上傳、修改或刪除題庫。
+- 用全新 email 完成 Magic Link：建立使用者；登入後只能讀寫自己的事件與設定。
 - 插入早於 2026-01-01 或晚於伺服器當日 + 1 的 `study_day`：trigger 拒絕。
 
 ## 同時寫入與收斂
@@ -34,4 +34,3 @@
 - 兩個 tab 同時更新：pointer 只能單調升版；讀取不得混版。
 - 新題庫缺歷史 item 且無 tombstone：拒絕切換並保留舊版。
 - `.in()` ack 以 50 UUID 實測並記錄 URL 長度、HTTP 狀態；逼近服務限制則下修批次。
-

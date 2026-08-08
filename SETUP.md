@@ -1,37 +1,37 @@
 # 安裝與部署
 
-以下流程不需要把 PDF 上傳到任何服務。你會用 Supabase 保存個人進度與私有題庫，再用 Cloudflare Pages Direct Upload 部署 `dist/`。
+以下流程不需要把 PDF 上傳到任何服務。你會用一個預先設定的 Supabase 環境保存最多約 10 位使用者的個人進度與私有題庫，再用 Cloudflare Pages 部署 `dist/`。一般使用者只需輸入 Email，不需要接觸 Supabase 設定。
 
-## 1. 建立 Supabase 專案與唯一使用者
+## 1. 建立單一 Supabase 專案與自動註冊
 
 1. 在 Supabase 建立專案，region 建議選離台灣較近的位置並記錄實際 region。
 2. 到 **Authentication → Sign In / Providers → Email** 開啟 Email。
-3. 關閉公開註冊；先由 Dashboard 手動建立你自己的使用者。若使用 Supabase 預設寄信服務，登入 Email 必須是專案組織的成員信箱。
-4. 到 **Authentication → URL Configuration**，把 Site URL 與 Redirect URLs 加入 `http://localhost:8080/dist/`。使用預設 Magic Link，不需要修改 Email template。
-5. 記下 **Project URL** 與 **publishable key**（舊專案也可用 anon key）。`sb_secret_*` 與 `service_role` 權限極高，絕不可貼進網頁。
-6. 從 Authentication 使用者清單複製自己的 UUID。
+3. 開啟 **Allow new users to sign up**。使用者第一次寄送並完成 Magic Link 後會自動建立帳號，不需要在 Dashboard 預先建立 Email。
+4. 若使用者不是 Supabase 專案組織成員，必須設定 Custom SMTP；內建寄信服務只適合專案成員測試，而且額度很低。
+5. 到 **Authentication → URL Configuration**，把 Site URL 與 Redirect URLs 加入 `http://localhost:8080/dist/`。使用預設 Magic Link，不需要修改 Email template。
+6. 記下 **Project URL** 與 **publishable key**（舊專案也可用 anon key），填入 `src/config.js` 的 `supabaseUrl` 與 `supabasePublishableKey`。這是部署者唯一一次需要設定連線資料；`sb_secret_*` 與 `service_role` 權限極高，絕不可填入。
 
 ## 2. 建立資料表、RLS 與私有題庫
 
 1. 開啟 `supabase/schema.sql`。
-2. 把 Storage policy 中的 `00000000-0000-0000-0000-000000000000` 換成你的使用者 UUID。
-3. 在 SQL Editor 執行整份 SQL。它會建立事件、設定、trigger、RLS、私有 `bank` bucket 與單一使用者讀取 policy。
-4. 在本機完成題庫驗證與建置：
+2. 在 SQL Editor 執行整份 SQL。它會建立事件、設定、trigger、RLS、私有 `bank` bucket，以及僅限已登入帳號讀取的 policy；不需要替換 UUID。
+3. 在本機完成題庫驗證與建置：
 
    ```bash
    python3 tools/validate.py
    python3 tools/build.py
    ```
 
-5. 到 Storage 的私有 `bank` bucket，上傳 `data/questions.json` 與 `data/manifest.json`，檔名與路徑不要改。
+4. 到 Storage 的私有 `bank` bucket，上傳 `data/questions.json` 與 `data/manifest.json`，檔名與路徑不要改。
 
 ## 3. 部署 Cloudflare Pages
 
-1. Cloudflare Dashboard → Workers & Pages → Create → Pages → Direct Upload。
-2. 上傳整個 `dist/` 目錄並取得 `*.pages.dev` 網址。
-3. Direct Upload 的 Dashboard 限制是 1,000 個檔、單檔 25 MiB；本專案只有 3 個 shell 檔案，低於限制。
-4. Direct Upload 專案之後不能直接切換成 Git integration；若要改用 Git，請另建 Pages 專案。
-5. 把正式 `https://專案名稱.pages.dev/` 加到 Supabase 的 Site URL / Redirect URLs，開正式網址，在設定頁貼 Project URL、publishable key、email，寄送登入連結並在同一瀏覽器點開。登入後網站會從私有 bucket 驗證並下載題庫。
+1. 重新執行 `python3 tools/build.py`，確認最新的 `src/config.js` 已複製到 `dist/config.js`。
+2. 將乾淨版本推送到 GitHub Private repository。
+3. Cloudflare Dashboard → Workers & Pages → Create application → Pages → Connect to Git，選擇該 repository。
+4. Production branch 設 `main`、Framework preset 設 `None`、Build command 設 `exit 0`、Build output directory 設 `dist`、Root directory 留空。
+5. 部署並取得 `https://專案名稱.pages.dev/`。
+6. 把正式 Pages 網址加到 Supabase 的 Site URL / Redirect URLs。使用者開啟正式網址後只需輸入 Email，點信箱裡的登入連結即可下載私有題庫。
 
 ## 4. 手機與電腦驗證
 
@@ -53,7 +53,7 @@ curl -I https://你的網域.pages.dev/sw.js
 
 - **登入信沒收到**：確認使用者已由 Dashboard 建立、Email provider 開啟；使用 Supabase 預設寄信服務時，收件信箱必須是專案組織成員，且寄信額度很低。再檢查垃圾郵件與 Auth Logs。
 - **點連結後網址錯誤**：確認目前的 localhost 或 Pages 網址已完整加入 Authentication → URL Configuration 的 Redirect URLs。
-- **題庫 403**：確認 bucket 是 private、policy 的 UUID 是目前登入者、兩個檔案位於 bucket 根目錄。
+- **題庫 403**：確認 bucket 是 private、`bank_authenticated_read` policy 已建立、帳號已登入，且兩個檔案位於 bucket 根目錄。
 - **同步卡住**：先按「立即同步」，仍未完成再按「檢查完整性」。若後台曾刪資料或重建專案，執行「強制全量重建本機」。
 - **Service Worker 沒更新**：確認 `sw.js` no-cache，重新部署後等「有新版本」提示，再主動重新載入。
 - **換時區後日期不對**：設定 IANA 時區並儲存；學習日以當地 04:00 為日界。

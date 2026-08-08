@@ -14,7 +14,7 @@ def build(root: Path) -> None:
     src, dist, data = root / "src", root / "dist", root / "data"
     if dist.exists(): shutil.rmtree(dist)
     dist.mkdir()
-    for name in ("index.html", "sw.js", "_headers"):
+    for name in ("index.html", "config.js", "sw.js", "_headers"):
         shutil.copy2(src / name, dist / name)
     bank = (data / "questions.json").read_bytes()
     questions = json.loads(bank)
@@ -30,4 +30,3 @@ def build(root: Path) -> None:
 
 if __name__=="__main__":
     p=argparse.ArgumentParser();p.add_argument("--root",type=Path,default=Path(__file__).resolve().parents[1]);build(p.parse_args().root)
-

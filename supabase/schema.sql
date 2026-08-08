@@ -1,6 +1,6 @@
 -- 拾光：AI 應用規劃師記憶練習
--- 執行前請先在 Authentication 建立唯一使用者，並在下方 storage policy
--- 將 00000000-0000-0000-0000-000000000000 換成該使用者的 UUID。
+-- Authentication 啟用 Email signup；使用者第一次完成 Magic Link 後會自動建立帳號。
+-- 所有已登入帳號可讀私有題庫；事件與設定仍由 RLS 依 auth.uid() 隔離。
 
 create table if not exists public.answer_events (
   event_id uuid primary key,
@@ -58,9 +58,6 @@ values ('bank', 'bank', false)
 on conflict (id) do update set public = false;
 
 drop policy if exists bank_single_user_read on storage.objects;
-create policy bank_single_user_read on storage.objects for select to authenticated
-using (
-  bucket_id = 'bank'
-  and (select auth.uid()) = '00000000-0000-0000-0000-000000000000'::uuid
-);
-
+drop policy if exists bank_authenticated_read on storage.objects;
+create policy bank_authenticated_read on storage.objects for select to authenticated
+using (bucket_id = 'bank');

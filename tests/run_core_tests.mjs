@@ -6,7 +6,7 @@ const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)][0]?.[1];
 if (!script) throw new Error("找不到 inline app script");
 const prefix = script.slice(0, script.indexOf("function request("));
 const signalGate = script.match(/async function signalGate\([^\n]+/)?.[0];
-const core = new Function("crypto", `${prefix}\n${signalGate}; return {addDays,studyDay,dayOutcome,deriveItem,deriveAll,normalizeAnswer,editDistance,judge,signalGate,parseMagicLink};`)(globalThis.crypto);
+const core = new Function("crypto", `${prefix}\n${signalGate}; return {addDays,studyDay,dayOutcome,deriveItem,deriveAll,normalizeAnswer,editDistance,judge,signalGate,parseMagicLink,deploymentConfig,configReady};`)(globalThis.crypto);
 const tests = [];
 const test = async (name, fn) => { await fn(); tests.push(name); };
 const permutations = a => a.length < 2 ? [a] : a.flatMap((x, i) => permutations(a.slice(0, i).concat(a.slice(i + 1))).map(r => [x, ...r]));
@@ -63,6 +63,17 @@ await test("Magic Link fragment 可安全解析", () => {
   assert.equal(session.expires_at, 1900000000);
   assert.equal(core.parseMagicLink(""), null);
   assert.deepEqual(core.parseMagicLink("#error_description=Link%20expired"), {error:"Link expired"});
+});
+
+await test("部署設定正規化並拒絕未替換 placeholder", () => {
+  assert.deepEqual(core.deploymentConfig({supabaseUrl:" https://demo.supabase.co/ ",supabasePublishableKey:" public-key "}), {url:"https://demo.supabase.co",key:"public-key"});
+  assert.equal(core.configReady({url:"https://demo.supabase.co",key:"sb_publishable_REPLACE_ME"}), false);
+  assert.equal(core.configReady({url:"https://demo.supabase.co",key:"public-key"}), true);
+});
+
+await test("Magic Link 允許首次使用自動建立帳號", () => {
+  assert.match(html, /should_create_user:true/);
+  assert.doesNotMatch(html, /should_create_user:false/);
 });
 
 console.log(`core tests: ${tests.length}/${tests.length} passed`);
