@@ -105,12 +105,40 @@ await test("參考版藍綠介面與完整錯題卡已接入", () => {
   assert.match(html, /重新練習/);
 });
 
+await test("三科學習筆記與官方練習評量已導入", () => {
+  const notes = JSON.parse(fs.readFileSync(new URL("../src/notes.json", import.meta.url), "utf8"));
+  assert.equal(notes.subjects.length, 3);
+  const sections = notes.subjects.flatMap(s => s.chapters.flatMap(c => c.sections));
+  const quiz = notes.subjects.flatMap(s => s.chapters.flatMap(c => c.quiz));
+  assert.equal(sections.length, 34);
+  assert.equal(quiz.length, 110);
+  for (const sec of sections) {
+    assert.ok(sec.summary.length > 40, `${sec.id} 缺摘要`);
+    assert.ok(sec.keypoints.length >= 10, `${sec.id} 重點不足`);
+    assert.ok(sec.terms.length >= 8, `${sec.id} 術語不足`);
+  }
+  for (const q of quiz) {
+    assert.equal(q.options.length, 4);
+    assert.ok(Number.isInteger(q.answer) && q.answer >= 0 && q.answer < 4);
+    assert.ok(q.explain.length > 5);
+  }
+});
+
+await test("自我測驗採官方練習評量與即時解析", () => {
+  assert.match(html, /class="quiz-modes"/);
+  assert.match(html, /class="q-explain/);
+  assert.match(html, /答錯了，正確答案為/);
+  assert.match(html, /錯題複習/);
+  assert.match(html, /全部混合/);
+});
+
 await test("學習筆記採參考版雙欄、搜尋與重點術語結構", () => {
   assert.match(html, /class="notes-layout"/);
+  assert.match(html, /class="subject-tabs"/);
   assert.match(html, /id="notesSearch"/);
   assert.match(html, /章節導覽/);
   assert.match(html, /重點精華/);
-  assert.match(html, /容易混淆的關鍵對照/);
+  assert.match(html, /關鍵對照表/);
   assert.match(html, /必背術語/);
   assert.match(html, /已複習這個觀念/);
 });

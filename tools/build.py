@@ -14,8 +14,11 @@ def build(root: Path) -> None:
     src, dist, data = root / "src", root / "dist", root / "data"
     if dist.exists(): shutil.rmtree(dist)
     dist.mkdir()
-    for name in ("index.html", "config.js", "sw.js", "_headers"):
+    for name in ("index.html", "config.js", "sw.js", "_headers", "notes.json"):
         shutil.copy2(src / name, dist / name)
+    notes = (dist / "notes.json").read_bytes()
+    if len(notes) > 1024 * 1024: raise SystemExit("notes.json 超過 1 MB")
+    print(f"notes.json: {len(notes)} bytes, gzip {len(gzip.compress(notes))} bytes")
     bank = (data / "questions.json").read_bytes()
     concept_bank = (data / "concepts.json").read_bytes()
     questions = json.loads(bank)
