@@ -96,5 +96,24 @@ await test("設定頁已移除且頁首提供登入註冊按鈕", () => {
   assert.match(html, /id="openRegister">註冊/);
 });
 
+await test("參考版藍綠介面與完整錯題卡已接入", () => {
+  assert.match(html, /linear-gradient\(110deg,#1e3a8a 0%,#2563eb 45%,#0e9384 110%\)/);
+  assert.match(html, /📘 學習筆記/);
+  assert.match(html, /📝 錯題本/);
+  assert.match(html, /data-mistake-review=/);
+  assert.match(html, /正確答案：/);
+  assert.match(html, /重新練習/);
+});
+
+await test("學習筆記採參考版雙欄、搜尋與重點術語結構", () => {
+  assert.match(html, /class="notes-layout"/);
+  assert.match(html, /id="notesSearch"/);
+  assert.match(html, /章節導覽/);
+  assert.match(html, /重點精華/);
+  assert.match(html, /容易混淆的關鍵對照/);
+  assert.match(html, /必背術語/);
+  assert.match(html, /已複習這個觀念/);
+});
+
 console.log(`core tests: ${tests.length}/${tests.length} passed`);
 for (const name of tests) console.log(`✓ ${name}`);
