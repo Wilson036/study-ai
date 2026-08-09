@@ -6,7 +6,7 @@ const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)][0]?.[1];
 if (!script) throw new Error("找不到 inline app script");
 const prefix = script.slice(0, script.indexOf("function request("));
 const signalGate = script.match(/async function signalGate\([^\n]+/)?.[0];
-const core = new Function("crypto", `${prefix}\n${signalGate}; return {addDays,studyDay,dayOutcome,deriveItem,deriveAll,normalizeAnswer,editDistance,judge,signalGate,parseMagicLink,deploymentConfig,configReady};`)(globalThis.crypto);
+const core = new Function("crypto", `${prefix}\n${signalGate}; return {addDays,studyDay,dayOutcome,deriveItem,deriveAll,normalizeAnswer,editDistance,judge,groupConcepts,signalGate,deploymentConfig,configReady};`)(globalThis.crypto);
 const tests = [];
 const test = async (name, fn) => { await fn(); tests.push(name); };
 const permutations = a => a.length < 2 ? [a] : a.flatMap((x, i) => permutations(a.slice(0, i).concat(a.slice(i + 1))).map(r => [x, ...r]));
@@ -56,13 +56,16 @@ await test("保存失敗時不執行揭示回呼", async () => {
   await assert.rejects(core.signalGate(async () => { throw new Error("quota"); }, () => { shown = true; }));
   assert.equal(shown, false);
 });
-await test("Magic Link fragment 可安全解析", () => {
-  const session = core.parseMagicLink("#access_token=user-jwt&refresh_token=refresh-value&expires_at=1900000000&expires_in=3600&token_type=bearer&type=magiclink");
-  assert.equal(session.access_token, "user-jwt");
-  assert.equal(session.refresh_token, "refresh-value");
-  assert.equal(session.expires_at, 1900000000);
-  assert.equal(core.parseMagicLink(""), null);
-  assert.deepEqual(core.parseMagicLink("#error_description=Link%20expired"), {error:"Link expired"});
+await test("觀念題型依 conceptId 合併且保留較完整解釋", () => {
+  const groups = core.groupConcepts([
+    {id:"q1",conceptId:"c1",explanation:"短",tombstoned:false},
+    {id:"q2",conceptId:"c1",explanation:"較完整的說明",tombstoned:false},
+    {id:"q3",conceptId:"c2",explanation:"另一個觀念",tombstoned:false},
+    {id:"q4",conceptId:"c3",explanation:"已刪除",tombstoned:true},
+  ]);
+  assert.equal(groups.length, 2);
+  assert.deepEqual(groups[0].items.map(x => x.id), ["q1", "q2"]);
+  assert.equal(groups[0].primary.id, "q2");
 });
 
 await test("部署設定正規化並拒絕未替換 placeholder", () => {
@@ -71,9 +74,10 @@ await test("部署設定正規化並拒絕未替換 placeholder", () => {
   assert.equal(core.configReady({url:"https://demo.supabase.co",key:"public-key"}), true);
 });
 
-await test("Magic Link 允許首次使用自動建立帳號", () => {
-  assert.match(html, /should_create_user:true/);
-  assert.doesNotMatch(html, /should_create_user:false/);
+await test("使用 Email 密碼註冊登入且不呼叫 Magic Link", () => {
+  assert.match(html, /\/auth\/v1\/token\?grant_type=password/);
+  assert.match(html, /\/auth\/v1\/signup/);
+  assert.doesNotMatch(html, /\/auth\/v1\/otp/);
 });
 
 console.log(`core tests: ${tests.length}/${tests.length} passed`);

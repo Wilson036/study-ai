@@ -1,5 +1,5 @@
 -- 拾光：AI 應用規劃師記憶練習
--- Authentication 啟用 Email signup；使用者第一次完成 Magic Link 後會自動建立帳號。
+-- Authentication 啟用 Email/password signup；使用者可直接在網站註冊與登入。
 -- 所有已登入帳號可讀私有題庫；事件與設定仍由 RLS 依 auth.uid() 隔離。
 
 create table if not exists public.answer_events (
@@ -52,6 +52,23 @@ returns trigger language plpgsql set search_path = '' as $$
 begin new.updated_at = now(); return new; end $$;
 drop trigger if exists us_touch on public.user_settings;
 create trigger us_touch before update on public.user_settings for each row execute function public.touch_updated_at();
+
+create table if not exists public.concept_reviews (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  concept_id text not null,
+  reviewed boolean not null default false,
+  reviewed_at timestamptz,
+  updated_at timestamptz not null default now(),
+  primary key (user_id, concept_id)
+);
+alter table public.concept_reviews enable row level security;
+drop policy if exists cr_all on public.concept_reviews;
+create policy cr_all on public.concept_reviews for all to authenticated
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
+drop trigger if exists cr_touch on public.concept_reviews;
+create trigger cr_touch before update on public.concept_reviews
+  for each row execute function public.touch_updated_at();
 
 insert into storage.buckets (id, name, public)
 values ('bank', 'bank', false)

@@ -19,6 +19,6 @@ test("曆日加減跨年",()=>eq(C.addDays("2026-12-31",1),"2027-01-01"));
 test("台北 03:59 屬前一學習日",()=>eq(C.studyDay(new Date("2026-02-01T19:59:00Z"),"Asia/Taipei"),"2026-02-01"));
 test("台北 04:00 屬當日",()=>eq(C.studyDay(new Date("2026-02-01T20:00:00Z"),"Asia/Taipei"),"2026-02-02"));
 test("DST 時區日界仍為 04:00",()=>eq(C.studyDay(new Date("2026-03-08T07:30:00Z"),"America/New_York"),"2026-03-07"));
-test("Magic Link fragment 解析",()=>{const s=C.parseMagicLink("#access_token=user-jwt&refresh_token=refresh&expires_at=1900000000&type=magiclink");eq(s.access_token,"user-jwt");eq(s.refresh_token,"refresh");eq(C.parseMagicLink(""),null)});
+test("相同觀念題型合併且 tombstone 不顯示",()=>{const groups=C.groupConcepts([{id:"q1",conceptId:"c1",explanation:"短"},{id:"q2",conceptId:"c1",explanation:"比較完整的說明"},{id:"q3",conceptId:"c2",explanation:"另一個"},{id:"q4",conceptId:"c3",explanation:"刪除",tombstoned:true}]);eq(groups.length,2);eq(groups[0].items.map(x=>x.id),["q1","q2"]);eq(groups[0].primary.id,"q2")});
 const failed=results.filter(x=>!x[0]);document.querySelector("#summary").textContent=`${results.length-failed.length}/${results.length} 通過`;document.querySelector("#results").innerHTML=results.map(([ok,n])=>`<li class="${ok?'ok':'bad'}">${ok?'✓':'✗'} ${n}</li>`).join("");document.title=failed.length?`FAIL ${failed.length}`:"PASS";
 };</script></body></html>

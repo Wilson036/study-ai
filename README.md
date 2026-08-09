@@ -1,6 +1,6 @@
 # 拾光｜AI 應用規劃師（中級）互動記憶網頁
 
-拾光是依兩份官方學習指引建立的主動回想網站。它不是完整 Anki，也不在使用時呼叫 LLM：題庫在部署前一次生成並凍結，網站只負責出題、間隔排程、離線保存與跨裝置同步。整個網站使用單一預先設定的 Supabase 環境，一般使用者只需輸入 Email，不會看到 Supabase 設定欄位。
+拾光是依兩份官方學習指引建立的主動回想網站。它不是完整 Anki，也不在使用時呼叫 LLM：題庫在部署前一次生成並凍結，網站只負責出題、間隔排程、離線保存與跨裝置同步。整個網站使用單一預先設定的 Supabase 環境，一般使用者可直接以 Email 與密碼註冊、登入，不會看到 Supabase 設定欄位。
 
 ## 已實作
 
@@ -9,7 +9,8 @@
 - 日級最差優先聚合：同日有 `clean` 與 `wrong` 時以 `wrong` 為準；派生狀態每次由完整事件集合重算。
 - 答錯隔天再見；答對間隔 1 → 3 → 7 → 21 → 60 天；錯題須在答錯後兩個不同日完整答對才畢業。
 - 提示、揭答與首次提交各自先寫入不可變事件；保存失敗就不顯示提示、答案或判定。
-- IndexedDB outbox、`projectRef:userId` 分區、Email Magic Link、RLS、私有 Storage 題庫。
+- IndexedDB outbox、`projectRef:userId` 分區、Email/password 登入彈窗、RLS、私有 Storage 題庫。
+- 觀念地圖依核心觀念合併相關題型，補上中英文名稱、完整摘要、原文脈絡、易混淆項目與複習 checkbox。
 - 上傳批次 50、ack 取完整伺服器列、keyset 全量下行、前後 count 穩定對帳、ID digest 與全量重建逃生口。
 - SHA-256 原始 bytes 驗證、版本化題庫 keyspace、active pointer、Web Locks 與 lease/fencing fallback。
 - 響應式手機/桌面介面、鍵盤操作、Service Worker 離線 shell 與新版提示。
@@ -28,11 +29,11 @@ python3 tools/build.py
 python3 -m http.server 8080
 ```
 
-部署者要先在 `src/config.js` 填入 Supabase Project URL 與 publishable key，再執行 `python3 tools/build.py`。開啟 `http://localhost:8080/src/` 使用網站，或開啟 `http://localhost:8080/tests/unit.html` 執行瀏覽器單元測試。`dist/` 只含 app shell 與公開連線設定，不含私有題庫；部署前要把 `data/questions.json` 與 `data/manifest.json` 上傳到 Supabase Storage。
+部署者要先在 `src/config.js` 填入 Supabase Project URL 與 publishable key，再執行 `python3 tools/build.py`。開啟 `http://localhost:8080/src/` 使用網站，或開啟 `http://localhost:8080/tests/unit.html` 執行瀏覽器單元測試。`dist/` 只含 app shell 與公開連線設定，不含私有題庫；部署前要把 `data/questions.json`、`data/concepts.json` 與 `data/manifest.json` 上傳到 Supabase Storage。
 
 ## 資料與隱私
 
-兩份來源 PDF 只在本機被讀取，沒有移動到 `study-app/`、沒有複製到 `dist/`，也不應上傳到 Cloudflare 或 Supabase。瀏覽器中的 local profile 不是安全邊界；有本機瀏覽器存取權的人可以讀改刪該裝置的資料。使用者第一次完成 Magic Link 後會自動建立帳號；伺服器端以 JWT 與 RLS 隔離各使用者資料，私有題庫只開放給已登入帳號。
+兩份來源 PDF 只在本機被讀取，沒有移動到 `study-app/`、沒有複製到 `dist/`，也不應上傳到 Cloudflare 或 Supabase。瀏覽器中的 local profile 不是安全邊界；有本機瀏覽器存取權的人可以讀改刪該裝置的資料。使用者可在網站直接註冊；伺服器端以 JWT 與 RLS 隔離各使用者資料，私有題庫只開放給已登入帳號。
 
 `src/config.js` 只能放 Supabase **publishable key**（舊專案的 anon key 亦可）。這類前端 key 本來就會傳給瀏覽器，真正的資料權限仍由 Auth、RLS 與 Storage policy 控制。任何 secret 或 `service_role` key 都不得進入網頁、版本庫或截圖。
 
