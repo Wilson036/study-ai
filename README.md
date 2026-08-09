@@ -9,7 +9,8 @@
 - 日級最差優先聚合：同日有 `clean` 與 `wrong` 時以 `wrong` 為準；派生狀態每次由完整事件集合重算。
 - 答錯隔天再見；答對間隔 1 → 3 → 7 → 21 → 60 天；錯題須在答錯後兩個不同日完整答對才畢業。
 - 提示、揭答與首次提交各自先寫入不可變事件；保存失敗就不顯示提示、答案或判定。
-- IndexedDB outbox、`projectRef:userId` 分區、Email/password 登入彈窗、RLS、私有 Storage 題庫。
+- IndexedDB outbox、`projectRef:userId` 分區、Email/password 登入彈窗、忘記密碼流程、RLS、私有 Storage 題庫。
+- 登入、註冊與登出位於頁首；一般使用者介面不顯示部署或進階設定頁。
 - 觀念地圖依核心觀念合併相關題型，補上中英文名稱、完整摘要、原文脈絡、易混淆項目與複習 checkbox。
 - 上傳批次 50、ack 取完整伺服器列、keyset 全量下行、前後 count 穩定對帳、ID digest 與全量重建逃生口。
 - SHA-256 原始 bytes 驗證、版本化題庫 keyspace、active pointer、Web Locks 與 lease/fencing fallback。

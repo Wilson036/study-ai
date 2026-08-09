@@ -31,7 +31,7 @@
 3. Cloudflare Dashboard → Workers & Pages → Create application → Pages → Connect to Git，選擇該 repository。
 4. Production branch 設 `main`、Framework preset 設 `None`、Build command 設 `exit 0`、Build output directory 設 `dist`、Root directory 留空。
 5. 部署並取得 `https://專案名稱.pages.dev/`。
-6. 若有開啟 Confirm Email，把正式 Pages 網址加到 Supabase 的 Site URL / Redirect URLs。使用者開啟正式網址後可直接註冊或以 Email、密碼登入，再下載私有題庫。
+6. 把正式 Pages 網址加到 Supabase 的 **Site URL** 與 **Redirect URLs**。即使關閉 Confirm Email，「忘記密碼」的重設信仍需要這項設定才能正確回到網站。
 
 ## 4. 手機與電腦驗證
 
@@ -53,10 +53,10 @@ curl -I https://你的網域.pages.dev/sw.js
 
 - **無法註冊**：確認 Email provider 與 Allow new users to sign up 都已開啟；再查看 Authentication Logs 的錯誤。
 - **註冊後要求驗證信**：這表示 Confirm Email 仍開啟。想完全不使用 Email 連結就關閉它；想保留信箱驗證則設定 Custom SMTP 並檢查垃圾郵件。
-- **驗證連結網址錯誤**：只在有開啟 Confirm Email 時需要處理；確認目前的 localhost 或 Pages 網址已加入 Authentication → URL Configuration 的 Redirect URLs。
+- **重設密碼連結網址錯誤**：確認目前的 localhost 或 Pages 網址已加入 Authentication → URL Configuration 的 Redirect URLs。
 - **題庫 403**：確認 bucket 是 private、`bank_authenticated_read` policy 已建立、帳號已登入，且三個檔案位於 bucket 根目錄。
-- **同步卡住**：先按「立即同步」，仍未完成再按「檢查完整性」。若後台曾刪資料或重建專案，執行「強制全量重建本機」。
+- **同步卡住**：確認網路與登入狀態後重新開啟網站；本機 outbox 會再次自動同步。若後台曾刪資料或重建專案，請先匯出或備份重要資料再排查。
 - **Service Worker 沒更新**：確認 `sw.js` no-cache，重新部署後等「有新版本」提示，再主動重新載入。
-- **換時區後日期不對**：設定 IANA 時區並儲存；學習日以當地 04:00 為日界。
+- **日期不對**：目前一般介面固定使用 `Asia/Taipei`，學習日以當地 04:00 為日界。
 - **待上傳筆數不減**：確認仍有登入 session、網路可連 Supabase、RLS insert policy 存在。資料不會因失敗而自動刪除。
 - **後台手動刪列或重建專案**：count/digest 可能偵測到差異；一定要執行一次「強制全量重建本機」。

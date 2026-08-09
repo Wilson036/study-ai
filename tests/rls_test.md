@@ -26,7 +26,7 @@
 - 任一分頁失敗：不更新 confirmed 狀態。
 - ack 回來後、清 outbox 前關頁：重開後安全重送且不重複伺服器列。
 - 後台刪一列：count 對帳抓到；按「強制全量重建本機」可恢復。
-- 後台刪一列並新增一列（count 不變）：按「檢查完整性」的 ID digest 抓到。
+- 後台刪一列並新增一列（count 不變）：以測試程式執行 ID digest，必須抓到差異。
 - 本機放入同 event_id、不同 payload：ack 後 canonical 以伺服器為準且 divergence store 留紀錄。
 - 兩帳號輪流登入：分區、confirmed count、題庫與事件互不相見。
 

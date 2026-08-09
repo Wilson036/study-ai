@@ -20,5 +20,6 @@ test("台北 03:59 屬前一學習日",()=>eq(C.studyDay(new Date("2026-02-01T19
 test("台北 04:00 屬當日",()=>eq(C.studyDay(new Date("2026-02-01T20:00:00Z"),"Asia/Taipei"),"2026-02-02"));
 test("DST 時區日界仍為 04:00",()=>eq(C.studyDay(new Date("2026-03-08T07:30:00Z"),"America/New_York"),"2026-03-07"));
 test("相同觀念題型合併且 tombstone 不顯示",()=>{const groups=C.groupConcepts([{id:"q1",conceptId:"c1",explanation:"短"},{id:"q2",conceptId:"c1",explanation:"比較完整的說明"},{id:"q3",conceptId:"c2",explanation:"另一個"},{id:"q4",conceptId:"c3",explanation:"刪除",tombstoned:true}]);eq(groups.length,2);eq(groups[0].items.map(x=>x.id),["q1","q2"]);eq(groups[0].primary.id,"q2")});
+test("只接受密碼 recovery token",()=>{const r=C.parseRecoverySession("#access_token=recovery-jwt&refresh_token=refresh&type=recovery&expires_in=3600");eq(r.access_token,"recovery-jwt");eq(C.parseRecoverySession("#access_token=login-jwt&type=magiclink"),null)});
 const failed=results.filter(x=>!x[0]);document.querySelector("#summary").textContent=`${results.length-failed.length}/${results.length} 通過`;document.querySelector("#results").innerHTML=results.map(([ok,n])=>`<li class="${ok?'ok':'bad'}">${ok?'✓':'✗'} ${n}</li>`).join("");document.title=failed.length?`FAIL ${failed.length}`:"PASS";
 };</script></body></html>

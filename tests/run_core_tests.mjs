@@ -6,7 +6,7 @@ const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)][0]?.[1];
 if (!script) throw new Error("找不到 inline app script");
 const prefix = script.slice(0, script.indexOf("function request("));
 const signalGate = script.match(/async function signalGate\([^\n]+/)?.[0];
-const core = new Function("crypto", `${prefix}\n${signalGate}; return {addDays,studyDay,dayOutcome,deriveItem,deriveAll,normalizeAnswer,editDistance,judge,groupConcepts,signalGate,deploymentConfig,configReady};`)(globalThis.crypto);
+const core = new Function("crypto", `${prefix}\n${signalGate}; return {addDays,studyDay,dayOutcome,deriveItem,deriveAll,normalizeAnswer,editDistance,judge,groupConcepts,signalGate,deploymentConfig,configReady,parseRecoverySession};`)(globalThis.crypto);
 const tests = [];
 const test = async (name, fn) => { await fn(); tests.push(name); };
 const permutations = a => a.length < 2 ? [a] : a.flatMap((x, i) => permutations(a.slice(0, i).concat(a.slice(i + 1))).map(r => [x, ...r]));
@@ -78,6 +78,22 @@ await test("使用 Email 密碼註冊登入且不呼叫 Magic Link", () => {
   assert.match(html, /\/auth\/v1\/token\?grant_type=password/);
   assert.match(html, /\/auth\/v1\/signup/);
   assert.doesNotMatch(html, /\/auth\/v1\/otp/);
+});
+
+await test("忘記密碼只接受 recovery token 並可設定新密碼", () => {
+  const recovery = core.parseRecoverySession("#access_token=recovery-jwt&refresh_token=refresh&type=recovery&expires_in=3600");
+  assert.equal(recovery.access_token, "recovery-jwt");
+  assert.equal(recovery.type, "recovery");
+  assert.equal(core.parseRecoverySession("#access_token=login-jwt&type=magiclink"), null);
+  assert.match(html, /\/auth\/v1\/recover\?redirect_to=/);
+  assert.match(html, /method:"PUT",body:JSON\.stringify\(\{password\}\)/);
+});
+
+await test("設定頁已移除且頁首提供登入註冊按鈕", () => {
+  assert.doesNotMatch(html, /<section id="settings"/);
+  assert.doesNotMatch(html, /data-go="settings"/);
+  assert.match(html, /id="openLogin">登入/);
+  assert.match(html, /id="openRegister">註冊/);
 });
 
 console.log(`core tests: ${tests.length}/${tests.length} passed`);
